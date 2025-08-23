@@ -12,11 +12,11 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
-      - LOGGING_LEVEL=INFO
+      - LOGGING_LEVEL=DEBUG
     networks:
       - testing_net
     volumes:
-      - ./server/config.ini:/config.ini
+      - ./config.ini:/config.ini
 """
         )
         # Clientes
@@ -28,7 +28,7 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID={i}
-      - CLI_LOG_LEVEL=INFO
+      - CLI_LOG_LEVEL=DEBUG
     networks:
       - testing_net
     depends_on:
