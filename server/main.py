@@ -4,7 +4,15 @@ from configparser import ConfigParser
 from common.server import Server
 import logging
 import os
+import signal
+import sys
 
+
+def graceful_shutdown(server):
+    logging.info("action: shutdown | result: in_progress | msg: Closing server socket")
+    server._server_socket.close()
+    logging.info("action: shutdown | result: success | msg: Server socket closed")
+    sys.exit(0)
 
 def initialize_config():
     """ Parse env variables or config file to find program config params
@@ -41,14 +49,17 @@ def main():
     listen_backlog = config_params["listen_backlog"]
 
     initialize_log(logging_level)
+    server = Server(port, listen_backlog)
 
     # Log config parameters at the beginning of the program to verify the configuration
     # of the component
     logging.debug(f"action: config | result: success | port: {port} | "
                   f"listen_backlog: {listen_backlog} | logging_level: {logging_level}")
 
+    signal.signal(signal.SIGTERM, lambda signum, frame: graceful_shutdown(server))
+    signal.signal(signal.SIGINT, lambda signum, frame: graceful_shutdown(server))
+
     # Initialize server and start server loop
-    server = Server(port, listen_backlog)
     server.run()
 
 def initialize_log(logging_level):

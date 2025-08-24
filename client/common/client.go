@@ -34,6 +34,13 @@ func NewClient(config ClientConfig) *Client {
 	return client
 }
 
+func CloseClient(client *Client) {
+	if client.conn != nil {
+		client.conn.Close()
+		log.Infof("action: shutdown | result: success | msg: Client socket closed")
+	}
+}
+
 // CreateClientSocket Initializes client socket. In case of
 // failure, error is printed in stdout/stderr and exit 1
 // is returned
