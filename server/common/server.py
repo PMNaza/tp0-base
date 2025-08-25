@@ -1,6 +1,8 @@
 import socket
 import logging
 
+from server.common.utils import Bet, store_bets
+
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -32,14 +34,26 @@ class Server:
         client socket will also be closed
         """
         try:
-            # TODO: Modify the receive to avoid short-reads
-            msg = client_sock.recv(1024).rstrip().decode('utf-8')
-            addr = client_sock.getpeername()
-            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
-            # TODO: Modify the send to avoid short-writes
-            client_sock.send("{}\n".format(msg).encode('utf-8'))
-        except OSError as e:
-            logging.error("action: receive_message | result: fail | error: {e}")
+
+            data = b''
+            while not data.endswith(b'\n'):
+                chunk = client_sock.recv(1024)
+                if not chunk:
+                    break
+                data += chunk
+            msg = data.decode('utf-8').rstrip('\n')
+            nombre, apellido, documento, nacimiento, numero = msg.split('|')
+            bet = Bet('1', nombre, apellido, documento, nacimiento, numero)
+            store_bets([bet])
+            logging.info(f'action: apuesta_almacenada | result: success | dni: {documento} | numero: {numero}')
+            response = "OK\n"
+            total_sent = 0
+            response_bytes = response.encode('utf-8')
+            while total_sent < len(response_bytes):
+                sent = client_sock.send(response_bytes[total_sent:])
+                total_sent += sent
+        except Exception as e:
+            logging.error(f'action: apuesta_almacenada | result: fail | error: {e}')
         finally:
             client_sock.close()
 

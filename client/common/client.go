@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"net"
+	"os"
 	"time"
 
 	"github.com/op/go-logging"
@@ -57,6 +58,20 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
+func getEnv(key string) string {
+	return os.Getenv(key)
+}
+
+func serializeBet() string {
+	return fmt.Sprintf("%s|%s|%s|%s|%s\n",
+		getEnv("NOMBRE"),
+		getEnv("APELLIDO"),
+		getEnv("DOCUMENTO"),
+		getEnv("NACIMIENTO"),
+		getEnv("NUMERO"),
+	)
+}
+
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
 	// There is an autoincremental msgID to identify every message sent
@@ -66,12 +81,16 @@ func (c *Client) StartClientLoop() {
 		c.createClientSocket()
 
 		// TODO: Modify the send to avoid short-write
-		fmt.Fprintf(
-			c.conn,
-			"[CLIENT %v] Message N°%v\n",
-			c.config.ID,
-			msgID,
-		)
+		msg := serializeBet()
+		totalSent := 0
+		for totalSent < len(msg) {
+			n, err := c.conn.Write([]byte(msg)[totalSent:])
+			if err != nil {
+				// handle error
+			}
+			totalSent += n
+		}
+
 		msg, err := bufio.NewReader(c.conn).ReadString('\n')
 		c.conn.Close()
 
