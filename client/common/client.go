@@ -63,14 +63,14 @@ func getEnv(key string) string {
 	return os.Getenv(key)
 }
 
-func serializeBet() string {
+func serializeBet() (string, string, string) {
 	nombre := getEnv("NOMBRE")
 	apellido := getEnv("APELLIDO")
 	documento := getEnv("DOCUMENTO")
 	nacimiento := getEnv("NACIMIENTO")
 	numero := getEnv("NUMERO")
 	log.Infof("Enviando apuesta: %s|%s|%s|%s|%s", nombre, apellido, documento, nacimiento, numero)
-	return fmt.Sprintf("%s|%s|%s|%s|%s\n", nombre, apellido, documento, nacimiento, numero)
+	return fmt.Sprintf("%s|%s|%s|%s|%s\n", nombre, apellido, documento, nacimiento, numero), documento, numero
 }
 
 // StartClientLoop Send messages to the client until some time threshold is met
@@ -82,7 +82,7 @@ func (c *Client) StartClientLoop() {
 		c.createClientSocket()
 
 		// TODO: Modify the send to avoid short-write
-		msg := serializeBet()
+		msg, documento, numero := serializeBet()
 		totalSent := 0
 		for totalSent < len(msg) {
 			n, err := c.conn.Write([]byte(msg)[totalSent:])
@@ -107,6 +107,8 @@ func (c *Client) StartClientLoop() {
 			c.config.ID,
 			msg,
 		)
+
+		log.Infof("action: apuesta_enviada | result: success | dni: %s | numero: %s", documento, numero)
 
 		// Wait a time between sending one message and the next one
 		time.Sleep(c.config.LoopPeriod)

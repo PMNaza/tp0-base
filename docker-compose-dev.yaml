@@ -18,9 +18,9 @@ services:
       - CLI_ID=1
       - NOMBRE=Ana
       - APELLIDO=Gomez
-      - DOCUMENTO=23249493
-      - NACIMIENTO=1997-09-09
-      - NUMERO=135
+      - DOCUMENTO=20097438
+      - NACIMIENTO=1999-11-19
+      - NUMERO=5178
     networks:
       - testing_net
     depends_on:
