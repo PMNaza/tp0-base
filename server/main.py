@@ -8,11 +8,6 @@ import signal
 import sys
 
 
-def graceful_shutdown(server):
-    logging.info("action: shutdown | result: in_progress | msg: Closing server socket")
-    server._server_socket.close()
-    logging.info("action: shutdown | result: success | msg: Server socket closed")
-    sys.exit(0)
 
 def initialize_config():
     """ Parse env variables or config file to find program config params
@@ -56,8 +51,6 @@ def main():
     logging.debug(f"action: config | result: success | port: {port} | "
                   f"listen_backlog: {listen_backlog} | logging_level: {logging_level}")
 
-    signal.signal(signal.SIGTERM, lambda signum, frame: graceful_shutdown(server))
-    signal.signal(signal.SIGINT, lambda signum, frame: graceful_shutdown(server))
 
     # Initialize server and start server loop
     server.run()
