@@ -16,11 +16,11 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=1
-      - NOMBRE=Ana
-      - APELLIDO=Gomez
-      - DOCUMENTO=20097438
-      - NACIMIENTO=1999-11-19
-      - NUMERO=5178
+      - NOMBRE=Santiago
+      - APELLIDO=Lorca
+      - DOCUMENTO=25805427
+      - NACIMIENTO=1992-07-14
+      - NUMERO=8437
     networks:
       - testing_net
     depends_on:
