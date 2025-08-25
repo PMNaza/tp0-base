@@ -1,7 +1,7 @@
 import socket
 import logging
 
-from server.common.utils import Bet, store_bets
+from common.utils import Bet, store_bets
 
 
 class Server:

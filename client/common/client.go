@@ -53,6 +53,7 @@ func (c *Client) createClientSocket() error {
 			c.config.ID,
 			err,
 		)
+		return err
 	}
 	c.conn = conn
 	return nil
@@ -63,13 +64,13 @@ func getEnv(key string) string {
 }
 
 func serializeBet() string {
-	return fmt.Sprintf("%s|%s|%s|%s|%s\n",
-		getEnv("NOMBRE"),
-		getEnv("APELLIDO"),
-		getEnv("DOCUMENTO"),
-		getEnv("NACIMIENTO"),
-		getEnv("NUMERO"),
-	)
+	nombre := getEnv("NOMBRE")
+	apellido := getEnv("APELLIDO")
+	documento := getEnv("DOCUMENTO")
+	nacimiento := getEnv("NACIMIENTO")
+	numero := getEnv("NUMERO")
+	log.Infof("Enviando apuesta: %s|%s|%s|%s|%s", nombre, apellido, documento, nacimiento, numero)
+	return fmt.Sprintf("%s|%s|%s|%s|%s\n", nombre, apellido, documento, nacimiento, numero)
 }
 
 // StartClientLoop Send messages to the client until some time threshold is met
