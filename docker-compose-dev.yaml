@@ -16,17 +16,90 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=1
-      - NOMBRE=Lionel
-      - APELLIDO=Gomez
-      - DOCUMENTO=49307880
-      - NACIMIENTO=1985-06-17
-      - NUMERO=561
+      - NOMBRE=Maria
+      - APELLIDO=Lorca
+      - DOCUMENTO=21106740
+      - NACIMIENTO=1984-05-15
+      - NUMERO=9120
     networks:
       - testing_net
     depends_on:
       - server
     volumes:
       - ./client/config.yaml:/config.yaml
+      - ./data/dataset/agency-1.csv:/agency.csv
+  client2:
+    container_name: client2
+    image: client:latest
+    entrypoint: /client
+    environment:
+      - CLI_ID=2
+      - NOMBRE=Santiago
+      - APELLIDO=Gomez
+      - DOCUMENTO=40258866
+      - NACIMIENTO=1989-10-21
+      - NUMERO=7465
+    networks:
+      - testing_net
+    depends_on:
+      - server
+    volumes:
+      - ./client/config.yaml:/config.yaml
+      - ./data/dataset/agency-2.csv:/agency.csv
+  client3:
+    container_name: client3
+    image: client:latest
+    entrypoint: /client
+    environment:
+      - CLI_ID=3
+      - NOMBRE=Carlos
+      - APELLIDO=Fernandez
+      - DOCUMENTO=48347175
+      - NACIMIENTO=2005-12-26
+      - NUMERO=3098
+    networks:
+      - testing_net
+    depends_on:
+      - server
+    volumes:
+      - ./client/config.yaml:/config.yaml
+      - ./data/dataset/agency-3.csv:/agency.csv
+  client4:
+    container_name: client4
+    image: client:latest
+    entrypoint: /client
+    environment:
+      - CLI_ID=4
+      - NOMBRE=Ana
+      - APELLIDO=Perez
+      - DOCUMENTO=26200458
+      - NACIMIENTO=1976-10-26
+      - NUMERO=1351
+    networks:
+      - testing_net
+    depends_on:
+      - server
+    volumes:
+      - ./client/config.yaml:/config.yaml
+      - ./data/dataset/agency-4.csv:/agency.csv
+  client5:
+    container_name: client5
+    image: client:latest
+    entrypoint: /client
+    environment:
+      - CLI_ID=5
+      - NOMBRE=Lionel
+      - APELLIDO=Fernandez
+      - DOCUMENTO=44341424
+      - NACIMIENTO=1973-01-22
+      - NUMERO=3430
+    networks:
+      - testing_net
+    depends_on:
+      - server
+    volumes:
+      - ./client/config.yaml:/config.yaml
+      - ./data/dataset/agency-5.csv:/agency.csv
 
 networks:
   testing_net:
