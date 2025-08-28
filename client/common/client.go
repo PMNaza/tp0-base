@@ -2,9 +2,11 @@ package common
 
 import (
 	"bufio"
+	"encoding/csv"
 	"fmt"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/op/go-logging"
@@ -12,22 +14,20 @@ import (
 
 var log = logging.MustGetLogger("log")
 
-// ClientConfig Configuration used by the client
 type ClientConfig struct {
 	ID            string
 	ServerAddress string
 	LoopAmount    int
 	LoopPeriod    time.Duration
+	BatchMax      int
 }
 
-// Client Entity that encapsulates how
 type Client struct {
 	config ClientConfig
 	conn   net.Conn
+	file   *os.File
 }
 
-// NewClient Initializes a new client receiving the configuration
-// as a parameter
 func NewClient(config ClientConfig) *Client {
 	client := &Client{
 		config: config,
@@ -42,77 +42,121 @@ func CloseClient(client *Client) {
 	}
 }
 
-// CreateClientSocket Initializes client socket. In case of
-// failure, error is printed in stdout/stderr and exit 1
-// is returned
+func (c *Client) OpenCSV(path string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	c.file = file
+	return nil
+}
+
+func (c *Client) CloseCSV() {
+	if c.file != nil {
+		c.file.Close()
+		log.Infof("action: shutdown | result: success | msg: CSV file closed")
+	}
+}
+
+func (c *Client) ReadBetsFromCSV() ([][]string, error) {
+	if c.file == nil {
+		return nil, fmt.Errorf("CSV file not opened")
+	}
+	reader := csv.NewReader(c.file)
+	reader.FieldsPerRecord = 5
+	return reader.ReadAll()
+}
+
 func (c *Client) createClientSocket() error {
 	conn, err := net.Dial("tcp", c.config.ServerAddress)
 	if err != nil {
-		log.Criticalf(
-			"action: connect | result: fail | client_id: %v | error: %v",
-			c.config.ID,
-			err,
-		)
+		log.Criticalf("action: connect | result: fail | client_id: %v | error: %v", c.config.ID, err)
 		return err
 	}
 	c.conn = conn
 	return nil
 }
 
-func getEnv(key string) string {
-	return os.Getenv(key)
+func batchBets(bets [][]string, maxAmount int, maxBytes int) [][][]string {
+	var batches [][][]string
+	i := 0
+	for i < len(bets) {
+		var batch [][]string
+		batchSize := 0
+		for j := 0; j < maxAmount && i+j < len(bets); j++ {
+			bet := bets[i+j]
+			betStr := strings.Join(bet, "|")
+			if batchSize+len(betStr)+1 > maxBytes {
+				break
+			}
+			batch = append(batch, bet)
+			batchSize += len(betStr) + 1
+		}
+		if len(batch) == 0 {
+
+			batch = append(batch, bets[i])
+			i++
+		} else {
+			i += len(batch)
+		}
+		batches = append(batches, batch)
+	}
+	return batches
 }
 
-func serializeBet() (string, string, string) {
-	nombre := getEnv("NOMBRE")
-	apellido := getEnv("APELLIDO")
-	documento := getEnv("DOCUMENTO")
-	nacimiento := getEnv("NACIMIENTO")
-	numero := getEnv("NUMERO")
-	log.Infof("Enviando apuesta: %s|%s|%s|%s|%s", nombre, apellido, documento, nacimiento, numero)
-	return fmt.Sprintf("%s|%s|%s|%s|%s\n", nombre, apellido, documento, nacimiento, numero), documento, numero
+func serializeBatch(bets [][]string) string {
+	lines := make([]string, 0, len(bets))
+	for _, bet := range bets {
+		lines = append(lines, strings.Join(bet, "|"))
+	}
+	return strings.Join(lines, "\n") + "\n"
 }
 
-// StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
-	// There is an autoincremental msgID to identify every message sent
-	// Messages if the message amount threshold has not been surpassed
-	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
-		// Create the connection the server in every loop iteration. Send an
-		c.createClientSocket()
+	bets, err := c.ReadBetsFromCSV()
+	if err != nil {
+		log.Criticalf("action: read_csv | result: fail | error: %v", err)
+		return
+	}
 
-		// TODO: Modify the send to avoid short-write
-		msg, documento, numero := serializeBet()
+	const maxBytes = 8192
+	batches := batchBets(bets, c.config.BatchMax, maxBytes)
+
+	for _, batch := range batches {
+		msg := serializeBatch(batch)
+
+		if err := c.createClientSocket(); err != nil {
+			return
+		}
+
 		totalSent := 0
-		for totalSent < len(msg) {
-			n, err := c.conn.Write([]byte(msg)[totalSent:])
+		msgBytes := []byte(msg)
+		for totalSent < len(msgBytes) {
+			n, err := c.conn.Write(msgBytes[totalSent:])
 			if err != nil {
-				// handle error
+				log.Errorf("action: send_batch | result: fail | error: %v", err)
+				c.conn.Close()
+				return
 			}
 			totalSent += n
 		}
 
-		msg, err := bufio.NewReader(c.conn).ReadString('\n')
+		resp, err := bufio.NewReader(c.conn).ReadString('\n')
 		c.conn.Close()
+		resp = strings.TrimSpace(resp)
 
 		if err != nil {
-			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-				c.config.ID,
-				err,
-			)
+			log.Errorf("action: receive_response | result: fail | error: %v", err)
 			return
 		}
 
-		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
-			c.config.ID,
-			msg,
-		)
+		if resp == "OK" {
+			log.Infof("action: apuesta_enviada | result: success | cantidad: %d", len(batch))
+		} else {
+			log.Infof("action: apuesta_enviada | result: fail | cantidad: %d", len(batch))
+		}
 
-		log.Infof("action: apuesta_enviada | result: success | dni: %s | numero: %s", documento, numero)
-
-		// Wait a time between sending one message and the next one
 		time.Sleep(c.config.LoopPeriod)
-
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }

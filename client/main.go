@@ -110,16 +110,24 @@ func main() {
 		ID:            v.GetString("id"),
 		LoopAmount:    v.GetInt("loop.amount"),
 		LoopPeriod:    v.GetDuration("loop.period"),
+		BatchMax:      v.GetInt("batch.maxAmount"),
 	}
 
 	client := common.NewClient(clientConfig)
+	err = client.OpenCSV("agency.csv")
+	if err != nil {
+		log.Criticalf("action: open_csv | result: fail | error: %v", err)
+		os.Exit(1)
+	}
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
 		<-sigs
 		log.Infof("action: shutdown | result: in_progress | msg: Closing client socket")
 		common.CloseClient(client)
+		client.CloseCSV()
 		os.Exit(0)
 	}()
 	client.StartClientLoop()
+	client.CloseCSV()
 }

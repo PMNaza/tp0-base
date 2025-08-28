@@ -1,2 +1,7 @@
 server/config.ini
 client/config.yaml
+.data/agency-client1.csv
+.data/agency-client2.csv
+.data/agency-client3.csv
+.data/agency-client4.csv
+.data/agency-client5.csv

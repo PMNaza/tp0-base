@@ -48,26 +48,27 @@ class Server:
         client socket will also be closed
         """
         try:
-
             data = b''
             while not data.endswith(b'\n'):
-                chunk = client_sock.recv(1024)
+                chunk = client_sock.recv(4096)
                 if not chunk:
                     break
                 data += chunk
-            msg = data.decode('utf-8').rstrip('\n')
-            nombre, apellido, documento, nacimiento, numero = msg.split('|')
-            bet = Bet('1', nombre, apellido, documento, nacimiento, numero)
-            store_bets([bet])
-            logging.info(f'action: apuesta_almacenada | result: success | dni: {documento} | numero: {numero}')
+            batch_msg = data.decode('utf-8').rstrip('\n')
+            apuestas = batch_msg.split('\n')
+            bets = []
+            for apuesta in apuestas:
+                campos = apuesta.split('|')
+                if len(campos) != 5:
+                    raise ValueError("Apuesta inválida")
+                bets.append(Bet('1', *campos))
+            store_bets(bets)
+            logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
             response = "OK\n"
-            total_sent = 0
-            response_bytes = response.encode('utf-8')
-            while total_sent < len(response_bytes):
-                sent = client_sock.send(response_bytes[total_sent:])
-                total_sent += sent
+            client_sock.sendall(response.encode('utf-8'))
         except Exception as e:
-            logging.error(f'action: apuesta_almacenada | result: fail | error: {e}')
+            logging.error(f'action: apuesta_recibida | result: fail | cantidad: {len(apuestas)} | error: {e}')
+            client_sock.sendall(b"ERROR\n")
         finally:
             client_sock.close()
 
