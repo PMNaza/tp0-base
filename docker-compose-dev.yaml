@@ -16,90 +16,90 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=1
-      - NOMBRE=Santiago
+      - NOMBRE=Lionel
       - APELLIDO=Perez
-      - DOCUMENTO=24838445
-      - NACIMIENTO=1989-02-06
-      - NUMERO=7165
+      - DOCUMENTO=32120276
+      - NACIMIENTO=1970-01-11
+      - NUMERO=485
     networks:
       - testing_net
     depends_on:
       - server
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ./data/agency-1.csv:/agency.csv
+      - ./.data/agency-1.csv:/agency.csv
   client2:
     container_name: client2
     image: client:latest
     entrypoint: /client
     environment:
       - CLI_ID=2
-      - NOMBRE=Santiago
-      - APELLIDO=Gomez
-      - DOCUMENTO=29336226
-      - NACIMIENTO=1962-11-08
-      - NUMERO=7776
+      - NOMBRE=Maria
+      - APELLIDO=Perez
+      - DOCUMENTO=37556894
+      - NACIMIENTO=1973-05-25
+      - NUMERO=7649
     networks:
       - testing_net
     depends_on:
       - server
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ./data/agency-2.csv:/agency.csv
+      - ./.data/agency-2.csv:/agency.csv
   client3:
     container_name: client3
     image: client:latest
     entrypoint: /client
     environment:
       - CLI_ID=3
-      - NOMBRE=Maria
-      - APELLIDO=Gomez
-      - DOCUMENTO=22143794
-      - NACIMIENTO=1985-10-08
-      - NUMERO=6815
+      - NOMBRE=Lionel
+      - APELLIDO=Diaz
+      - DOCUMENTO=36910079
+      - NACIMIENTO=1966-08-07
+      - NUMERO=2973
     networks:
       - testing_net
     depends_on:
       - server
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ./data/agency-3.csv:/agency.csv
+      - ./.data/agency-3.csv:/agency.csv
   client4:
     container_name: client4
     image: client:latest
     entrypoint: /client
     environment:
       - CLI_ID=4
-      - NOMBRE=Santiago
-      - APELLIDO=Fernandez
-      - DOCUMENTO=44019398
-      - NACIMIENTO=1995-03-28
-      - NUMERO=3525
+      - NOMBRE=Maria
+      - APELLIDO=Perez
+      - DOCUMENTO=48125283
+      - NACIMIENTO=1996-01-08
+      - NUMERO=3409
     networks:
       - testing_net
     depends_on:
       - server
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ./data/agency-4.csv:/agency.csv
+      - ./.data/agency-4.csv:/agency.csv
   client5:
     container_name: client5
     image: client:latest
     entrypoint: /client
     environment:
       - CLI_ID=5
-      - NOMBRE=Carlos
-      - APELLIDO=Gomez
-      - DOCUMENTO=34723881
-      - NACIMIENTO=1952-06-25
-      - NUMERO=3151
+      - NOMBRE=Lionel
+      - APELLIDO=Diaz
+      - DOCUMENTO=47208127
+      - NACIMIENTO=1989-05-19
+      - NUMERO=9908
     networks:
       - testing_net
     depends_on:
       - server
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ./data/agency-5.csv:/agency.csv
+      - ./.data/agency-5.csv:/agency.csv
 
 networks:
   testing_net:

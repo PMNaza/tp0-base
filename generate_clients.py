@@ -39,7 +39,7 @@ services:
       - server
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ./data/agency-{i}.csv:/agency.csv
+      - ./.data/agency-{i}.csv:/agency.csv
 """
             )
         # Redes
