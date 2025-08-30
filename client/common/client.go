@@ -30,7 +30,7 @@ type Client struct {
 }
 
 func (c *Client) SendBatch(batch [][]string) error {
-	msg := serializeBatch(batch)
+	msg := serializeBatch(batch, c.config.ID)
 	if err := c.createClientSocket(); err != nil {
 		return err
 	}
@@ -76,10 +76,8 @@ func (c *Client) NotifyFin() error {
 }
 
 func (c *Client) ConsultarGanadores() (int, error) {
-	const maxRetries = 20
-	const retryDelay = 500 * time.Millisecond
 
-	for i := 0; i < maxRetries; i++ {
+	for {
 		if err := c.createClientSocket(); err != nil {
 			return 0, err
 		}
@@ -96,13 +94,11 @@ func (c *Client) ConsultarGanadores() (int, error) {
 		}
 		resp = strings.TrimSpace(resp)
 		if resp == "ERROR" || resp == "" {
-			time.Sleep(retryDelay)
-			continue // Reintenta
+			continue // Sigue intentando hasta obtener una respuesta válida
 		}
 		dnis := strings.Split(resp, "|")
 		return len(dnis), nil
 	}
-	return 0, fmt.Errorf("no se pudo obtener ganadores tras varios intentos")
 }
 
 func NewClient(config ClientConfig) *Client {
@@ -196,10 +192,12 @@ func batchBets(bets [][]string, maxAmount int, maxBytes int) [][][]string {
 	return batches
 }
 
-func serializeBatch(bets [][]string) string {
+func serializeBatch(bets [][]string, agencyID string) string {
 	lines := make([]string, 0, len(bets))
 	for _, bet := range bets {
-		lines = append(lines, strings.Join(bet, "|"))
+		// Prepend agencyID to each bet
+		line := append([]string{agencyID}, bet...)
+		lines = append(lines, strings.Join(line, "|"))
 	}
 	return strings.Join(lines, "\n") + "\n"
 }
@@ -214,8 +212,13 @@ func (c *Client) StartClientLoop() {
 	const maxBytes = 8192
 	batches := batchBets(bets, c.config.BatchMax, maxBytes)
 
-	for _, batch := range batches {
-		if err := c.SendBatch(batch); err != nil {
+	loopAmount := c.config.LoopAmount
+	if loopAmount > len(batches) {
+		loopAmount = len(batches)
+	}
+
+	for i := 0; i < loopAmount; i++ {
+		if err := c.SendBatch(batches[i]); err != nil {
 			log.Errorf("action: send_batch | result: fail | error: %v", err)
 			return
 		}

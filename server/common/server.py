@@ -84,9 +84,9 @@ class Server:
             bets = []
             for apuesta in apuestas:
                 campos = apuesta.split('|')
-                if len(campos) != 5:
+                if len(campos) != 6:  # Ahora son 6 campos
                     raise ValueError("Apuesta inválida")
-                bets.append(Bet('1', *campos))
+                bets.append(Bet(*campos))
             store_bets(bets)
             logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
             client_sock.sendall(b"OK\n")
