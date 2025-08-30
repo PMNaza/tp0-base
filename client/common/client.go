@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/csv"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"strings"
@@ -132,7 +133,22 @@ func (c *Client) ReadBetsFromCSV() ([][]string, error) {
 	}
 	reader := csv.NewReader(c.file)
 	reader.FieldsPerRecord = 5
-	return reader.ReadAll()
+	var bets [][]string
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		// Ignora líneas vacías
+		if len(record) != 5 {
+			continue
+		}
+		bets = append(bets, record)
+	}
+	return bets, nil
 }
 
 func (c *Client) createClientSocket() error {
