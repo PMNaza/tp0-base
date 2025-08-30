@@ -16,11 +16,11 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=1
-      - NOMBRE=Carlos
-      - APELLIDO=Diaz
-      - DOCUMENTO=35849867
-      - NACIMIENTO=1990-01-18
-      - NUMERO=8579
+      - NOMBRE=Ana
+      - APELLIDO=Fernandez
+      - DOCUMENTO=49871708
+      - NACIMIENTO=1991-08-12
+      - NUMERO=7512
     networks:
       - testing_net
     depends_on:
@@ -34,11 +34,11 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=2
-      - NOMBRE=Lionel
-      - APELLIDO=Fernandez
-      - DOCUMENTO=37556198
-      - NACIMIENTO=1968-02-15
-      - NUMERO=6713
+      - NOMBRE=Ana
+      - APELLIDO=Gomez
+      - DOCUMENTO=40732521
+      - NACIMIENTO=1982-09-19
+      - NUMERO=9341
     networks:
       - testing_net
     depends_on:
@@ -52,11 +52,11 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=3
-      - NOMBRE=Maria
-      - APELLIDO=Diaz
-      - DOCUMENTO=45755729
-      - NACIMIENTO=1970-02-06
-      - NUMERO=4960
+      - NOMBRE=Lionel
+      - APELLIDO=Lorca
+      - DOCUMENTO=37433118
+      - NACIMIENTO=2003-11-23
+      - NUMERO=2119
     networks:
       - testing_net
     depends_on:
@@ -70,11 +70,11 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=4
-      - NOMBRE=Lionel
+      - NOMBRE=Carlos
       - APELLIDO=Lorca
-      - DOCUMENTO=37449668
-      - NACIMIENTO=1950-10-18
-      - NUMERO=9613
+      - DOCUMENTO=36506710
+      - NACIMIENTO=1976-05-18
+      - NUMERO=5845
     networks:
       - testing_net
     depends_on:
@@ -88,11 +88,11 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=5
-      - NOMBRE=Ana
-      - APELLIDO=Fernandez
-      - DOCUMENTO=45482563
-      - NACIMIENTO=1963-07-06
-      - NUMERO=2751
+      - NOMBRE=Maria
+      - APELLIDO=Gomez
+      - DOCUMENTO=23866185
+      - NACIMIENTO=1982-09-13
+      - NUMERO=4080
     networks:
       - testing_net
     depends_on:
