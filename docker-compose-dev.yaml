@@ -16,11 +16,11 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=1
-      - NOMBRE=Carlos
-      - APELLIDO=Lorca
-      - DOCUMENTO=46444680
-      - NACIMIENTO=1975-07-21
-      - NUMERO=2042
+      - NOMBRE=Lionel
+      - APELLIDO=Diaz
+      - DOCUMENTO=42453611
+      - NACIMIENTO=1950-12-28
+      - NUMERO=8060
     networks:
       - testing_net
     depends_on:
@@ -34,11 +34,11 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=2
-      - NOMBRE=Carlos
-      - APELLIDO=Perez
-      - DOCUMENTO=44694412
-      - NACIMIENTO=1968-01-06
-      - NUMERO=5475
+      - NOMBRE=Maria
+      - APELLIDO=Gomez
+      - DOCUMENTO=38679673
+      - NACIMIENTO=1956-08-22
+      - NUMERO=5229
     networks:
       - testing_net
     depends_on:
@@ -52,11 +52,11 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=3
-      - NOMBRE=Ana
+      - NOMBRE=Lionel
       - APELLIDO=Perez
-      - DOCUMENTO=40898459
-      - NACIMIENTO=1987-02-15
-      - NUMERO=7768
+      - DOCUMENTO=48320517
+      - NACIMIENTO=1974-01-11
+      - NUMERO=7789
     networks:
       - testing_net
     depends_on:

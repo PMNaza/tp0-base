@@ -2,6 +2,7 @@ import signal
 import socket
 import logging
 import sys
+import os
 
 from common.utils import Bet, store_bets, load_bets, has_won
 
@@ -12,6 +13,7 @@ class Server:
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
+        self._total_agencies = int(os.getenv("TOTAL_AGENCIES", "5"))
         self._shutdown = False
         self._agencies_finished = set()
         self._sorteo_done = False
@@ -64,7 +66,7 @@ class Server:
                 self._agencies_finished.add(agency_id)
                 logging.info(f"action: fin_agencia | result: success | agencia: {agency_id} | total_agencias: {len(self._agencies_finished)}")
                 client_sock.sendall(b"OK\n")
-                if len(self._agencies_finished) == 5 and not self._sorteo_done:
+                if len(self._agencies_finished) == self._total_agencies and not self._sorteo_done:
                     self._realizar_sorteo()
                 return
 
@@ -84,7 +86,7 @@ class Server:
             bets = []
             for apuesta in apuestas:
                 campos = apuesta.split('|')
-                if len(campos) != 6:  # Ahora son 6 campos
+                if len(campos) != 6:
                     raise ValueError("Apuesta inválida")
                 bets.append(Bet(*campos))
             store_bets(bets)
