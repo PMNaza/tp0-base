@@ -72,7 +72,8 @@ class Server:
                 agency_id = msg.split("|")[1]
                 if not self._sorteo_done:
                     client_sock.sendall(b"ERROR\n")
-                    logging.info(f"action: consulta_ganadores | result: fail | agencia: {agency_id} | msg: sorteo no realizado")
+                    # Change this log line to result: in_progress instead of fail
+                    logging.info(f"action: consulta_ganadores | result: in_progress | agencia: {agency_id} | msg: sorteo no realizado")
                     return
                 ganadores = self._ganadores_por_agencia.get(int(agency_id), [])
                 dni_list = "|".join(ganadores)
