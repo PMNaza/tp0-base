@@ -97,6 +97,9 @@ func (c *Client) ConsultarGanadores() (int, error) {
 		if resp == "ERROR" {
 			continue
 		}
+		if resp == "" {
+			return 0, nil
+		}
 		dnis := strings.Split(resp, "|")
 		return len(dnis), nil
 	}
