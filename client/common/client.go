@@ -94,8 +94,8 @@ func (c *Client) ConsultarGanadores() (int, error) {
 			return 0, err
 		}
 		resp = strings.TrimSpace(resp)
-		if resp == "ERROR" || resp == "" {
-			continue // Sigue intentando hasta obtener una respuesta válida
+		if resp == "ERROR" {
+			continue
 		}
 		dnis := strings.Split(resp, "|")
 		return len(dnis), nil
@@ -147,7 +147,6 @@ func (c *Client) ReadBetsFromCSV() ([][]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		// Ignora líneas vacías
 		if len(record) != 5 {
 			continue
 		}
