@@ -77,7 +77,7 @@ func (c *Client) NotifyFin() error {
 
 func (c *Client) ConsultarGanadores() (int, error) {
 	const maxRetries = 20
-	const retryDelay = 3000 * time.Millisecond
+	const retryDelay = 1 * time.Millisecond
 
 	for i := 0; i < maxRetries; i++ {
 		if err := c.createClientSocket(); err != nil {
