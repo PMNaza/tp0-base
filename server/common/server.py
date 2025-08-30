@@ -1,3 +1,4 @@
+import threading
 import signal
 import socket
 import logging
@@ -6,10 +7,8 @@ import os
 
 from common.utils import Bet, store_bets, load_bets, has_won
 
-
 class Server:
     def __init__(self, port, listen_backlog):
-        # Initialize server socket
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
@@ -18,6 +17,7 @@ class Server:
         self._agencies_finished = set()
         self._sorteo_done = False
         self._ganadores_por_agencia = {}
+        self._lock = threading.Lock()  # Lock para sincronización
 
     def graceful_shutdown(self, signum, frame):
         logging.info("action: shutdown | result: in_progress | msg: Closing server socket")
@@ -27,31 +27,20 @@ class Server:
         sys.exit(0)
 
     def run(self):
-        """
-        Dummy Server loop
-
-        Server that accept a new connections and establishes a
-        communication with a client. After client with communucation
-        finishes, servers starts to accept new connections again
-        """
-
         signal.signal(signal.SIGTERM, self.graceful_shutdown)
         signal.signal(signal.SIGINT, self.graceful_shutdown)
 
         while not self._shutdown:
             try:
                 client_sock = self.__accept_new_connection()
-                self.__handle_client_connection(client_sock)
+                # Procesa cada conexión en un thread
+                t = threading.Thread(target=self.__handle_client_connection, args=(client_sock,))
+                t.daemon = True
+                t.start()
             except OSError:
                 break
 
     def __handle_client_connection(self, client_sock):
-        """
-        Read message from a specific client socket and closes the socket
-
-        If a problem arises in the communication with the client, the
-        client socket will also be closed
-        """
         try:
             data = b''
             while not data.endswith(b'\n'):
@@ -63,23 +52,25 @@ class Server:
 
             if msg.startswith("FIN|"):
                 agency_id = msg.split("|")[1]
-                self._agencies_finished.add(agency_id)
-                logging.info(f"action: fin_agencia | result: success | agencia: {agency_id} | total_agencias: {len(self._agencies_finished)}")
-                client_sock.sendall(b"OK\n")
-                if len(self._agencies_finished) == self._total_agencies and not self._sorteo_done:
-                    self._realizar_sorteo()
+                with self._lock:
+                    self._agencies_finished.add(agency_id)
+                    logging.info(f"action: fin_agencia | result: success | agencia: {agency_id} | total_agencias: {len(self._agencies_finished)}")
+                    client_sock.sendall(b"OK\n")
+                    if len(self._agencies_finished) == self._total_agencies and not self._sorteo_done:
+                        self._realizar_sorteo()
                 return
 
             if msg.startswith("CONSULTA_GANADORES|"):
                 agency_id = msg.split("|")[1]
-                if not self._sorteo_done:
-                    client_sock.sendall(b"ERROR\n")
-                    logging.info(f"action: consulta_ganadores | result: in_progress | agencia: {agency_id} | msg: sorteo no realizado")
-                    return
-                ganadores = self._ganadores_por_agencia.get(int(agency_id), [])
-                dni_list = "|".join(ganadores)
-                client_sock.sendall((dni_list + "\n").encode('utf-8'))
-                logging.info(f"action: consulta_ganadores | result: success | agencia: {agency_id} | cant_ganadores: {len(ganadores)}")
+                with self._lock:
+                    if not self._sorteo_done:
+                        client_sock.sendall(b"ERROR\n")
+                        logging.info(f"action: consulta_ganadores | result: in_progress | agencia: {agency_id} | msg: sorteo no realizado")
+                        return
+                    ganadores = self._ganadores_por_agencia.get(int(agency_id), [])
+                    dni_list = "|".join(ganadores)
+                    client_sock.sendall((dni_list + "\n").encode('utf-8'))
+                    logging.info(f"action: consulta_ganadores | result: success | agencia: {agency_id} | cant_ganadores: {len(ganadores)}")
                 return
 
             apuestas = msg.split('\n')
@@ -89,9 +80,10 @@ class Server:
                 if len(campos) != 6:
                     raise ValueError("Apuesta inválida")
                 bets.append(Bet(*campos))
-            store_bets(bets)
-            logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
-            client_sock.sendall(b"OK\n")
+            with self._lock:
+                store_bets(bets)
+                logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
+                client_sock.sendall(b"OK\n")
         except Exception as e:
             logging.error(f'action: apuesta_recibida | result: fail | error: {e}')
             client_sock.sendall(b"ERROR\n")
@@ -99,14 +91,6 @@ class Server:
             client_sock.close()
 
     def __accept_new_connection(self):
-        """
-        Accept new connections
-
-        Function blocks until a connection to a client is made.
-        Then connection created is printed and returned
-        """
-
-        # Connection arrived
         logging.info('action: accept_connections | result: in_progress')
         c, addr = self._server_socket.accept()
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
