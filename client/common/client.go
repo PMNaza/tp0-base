@@ -28,6 +28,74 @@ type Client struct {
 	file   *os.File
 }
 
+func (c *Client) SendBatch(batch [][]string) error {
+	msg := serializeBatch(batch)
+	if err := c.createClientSocket(); err != nil {
+		return err
+	}
+	defer c.conn.Close()
+
+	totalSent := 0
+	msgBytes := []byte(msg)
+	for totalSent < len(msgBytes) {
+		n, err := c.conn.Write(msgBytes[totalSent:])
+		if err != nil {
+			return err
+		}
+		totalSent += n
+	}
+
+	resp, err := bufio.NewReader(c.conn).ReadString('\n')
+	if err != nil {
+		return err
+	}
+	resp = strings.TrimSpace(resp)
+	if resp != "OK" {
+		return fmt.Errorf("server responded with %s", resp)
+	}
+	log.Infof("action: apuesta_enviada | result: success | cantidad: %d", len(batch))
+	return nil
+}
+
+func (c *Client) NotifyFin() error {
+	if err := c.createClientSocket(); err != nil {
+		return err
+	}
+	defer c.conn.Close()
+	finMsg := fmt.Sprintf("FIN|%s\n", c.config.ID)
+	_, err := c.conn.Write([]byte(finMsg))
+	if err != nil {
+		return err
+	}
+	resp, err := bufio.NewReader(c.conn).ReadString('\n')
+	if err != nil || strings.TrimSpace(resp) != "OK" {
+		return fmt.Errorf("server responded with %s", resp)
+	}
+	return nil
+}
+
+func (c *Client) ConsultarGanadores() (int, error) {
+	if err := c.createClientSocket(); err != nil {
+		return 0, err
+	}
+	defer c.conn.Close()
+	consultaMsg := fmt.Sprintf("CONSULTA_GANADORES|%s\n", c.config.ID)
+	_, err := c.conn.Write([]byte(consultaMsg))
+	if err != nil {
+		return 0, err
+	}
+	resp, err := bufio.NewReader(c.conn).ReadString('\n')
+	if err != nil {
+		return 0, err
+	}
+	resp = strings.TrimSpace(resp)
+	if resp == "ERROR" || resp == "" {
+		return 0, nil
+	}
+	dnis := strings.Split(resp, "|")
+	return len(dnis), nil
+}
+
 func NewClient(config ClientConfig) *Client {
 	client := &Client{
 		config: config,
@@ -123,40 +191,23 @@ func (c *Client) StartClientLoop() {
 	batches := batchBets(bets, c.config.BatchMax, maxBytes)
 
 	for _, batch := range batches {
-		msg := serializeBatch(batch)
-
-		if err := c.createClientSocket(); err != nil {
+		if err := c.SendBatch(batch); err != nil {
+			log.Errorf("action: send_batch | result: fail | error: %v", err)
 			return
 		}
-
-		totalSent := 0
-		msgBytes := []byte(msg)
-		for totalSent < len(msgBytes) {
-			n, err := c.conn.Write(msgBytes[totalSent:])
-			if err != nil {
-				log.Errorf("action: send_batch | result: fail | error: %v", err)
-				c.conn.Close()
-				return
-			}
-			totalSent += n
-		}
-
-		resp, err := bufio.NewReader(c.conn).ReadString('\n')
-		c.conn.Close()
-		resp = strings.TrimSpace(resp)
-
-		if err != nil {
-			log.Errorf("action: receive_response | result: fail | error: %v", err)
-			return
-		}
-
-		if resp == "OK" {
-			log.Infof("action: apuesta_enviada | result: success | cantidad: %d", len(batch))
-		} else {
-			log.Infof("action: apuesta_enviada | result: fail | cantidad: %d", len(batch))
-		}
-
 		time.Sleep(c.config.LoopPeriod)
 	}
+
+	if err := c.NotifyFin(); err != nil {
+		log.Errorf("action: notify_fin | result: fail | error: %v", err)
+		return
+	}
+
+	cantGanadores, err := c.ConsultarGanadores()
+	if err != nil {
+		log.Errorf("action: consulta_ganadores | result: fail | error: %v", err)
+		return
+	}
+	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %d", cantGanadores)
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }

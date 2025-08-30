@@ -3,7 +3,7 @@ import socket
 import logging
 import sys
 
-from common.utils import Bet, store_bets
+from common.utils import Bet, store_bets, load_bets, has_won
 
 
 class Server:
@@ -13,6 +13,9 @@ class Server:
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
         self._shutdown = False
+        self._agencies_finished = set()
+        self._sorteo_done = False
+        self._ganadores_por_agencia = {}
 
     def graceful_shutdown(self, signum, frame):
         logging.info("action: shutdown | result: in_progress | msg: Closing server socket")
@@ -54,8 +57,30 @@ class Server:
                 if not chunk:
                     break
                 data += chunk
-            batch_msg = data.decode('utf-8').rstrip('\n')
-            apuestas = batch_msg.split('\n')
+            msg = data.decode('utf-8').rstrip('\n')
+
+            if msg.startswith("FIN|"):
+                agency_id = msg.split("|")[1]
+                self._agencies_finished.add(agency_id)
+                logging.info(f"action: fin_agencia | result: success | agencia: {agency_id} | total_agencias: {len(self._agencies_finished)}")
+                client_sock.sendall(b"OK\n")
+                if len(self._agencies_finished) == 5 and not self._sorteo_done:
+                    self._realizar_sorteo()
+                return
+
+            if msg.startswith("CONSULTA_GANADORES|"):
+                agency_id = msg.split("|")[1]
+                if not self._sorteo_done:
+                    client_sock.sendall(b"ERROR\n")
+                    logging.info(f"action: consulta_ganadores | result: fail | agencia: {agency_id} | msg: sorteo no realizado")
+                    return
+                ganadores = self._ganadores_por_agencia.get(int(agency_id), [])
+                dni_list = "|".join(ganadores)
+                client_sock.sendall((dni_list + "\n").encode('utf-8'))
+                logging.info(f"action: consulta_ganadores | result: success | agencia: {agency_id} | cant_ganadores: {len(ganadores)}")
+                return
+
+            apuestas = msg.split('\n')
             bets = []
             for apuesta in apuestas:
                 campos = apuesta.split('|')
@@ -64,10 +89,9 @@ class Server:
                 bets.append(Bet('1', *campos))
             store_bets(bets)
             logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
-            response = "OK\n"
-            client_sock.sendall(response.encode('utf-8'))
+            client_sock.sendall(b"OK\n")
         except Exception as e:
-            logging.error(f'action: apuesta_recibida | result: fail | cantidad: {len(apuestas)} | error: {e}')
+            logging.error(f'action: apuesta_recibida | result: fail | error: {e}')
             client_sock.sendall(b"ERROR\n")
         finally:
             client_sock.close()
@@ -85,3 +109,14 @@ class Server:
         c, addr = self._server_socket.accept()
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
         return c
+    
+    def _realizar_sorteo(self):
+        self._ganadores_por_agencia = {}
+        for bet in load_bets():
+            if has_won(bet):
+                ag = bet.agency
+                if ag not in self._ganadores_por_agencia:
+                    self._ganadores_por_agencia[ag] = []
+                self._ganadores_por_agencia[ag].append(bet.document)
+        self._sorteo_done = True
+        logging.info("action: sorteo | result: success")
