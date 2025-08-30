@@ -17,13 +17,16 @@ class Server:
         self._agencies_finished = set()
         self._sorteo_done = False
         self._ganadores_por_agencia = {}
-        self._lock = threading.Lock()  # Lock para sincronización
+        self._lock = threading.Lock()
+        self._threads = []
 
     def graceful_shutdown(self, signum, frame):
         logging.info("action: shutdown | result: in_progress | msg: Closing server socket")
         self._server_socket.close()
         logging.info("action: shutdown | result: success | msg: Server socket closed")
         self._shutdown = True
+        for t in self._threads:
+            t.join(timeout=5)
         sys.exit(0)
 
     def run(self):
@@ -33,10 +36,10 @@ class Server:
         while not self._shutdown:
             try:
                 client_sock = self.__accept_new_connection()
-                # Procesa cada conexión en un thread
                 t = threading.Thread(target=self.__handle_client_connection, args=(client_sock,))
                 t.daemon = True
                 t.start()
+                self._threads.append(t)
             except OSError:
                 break
 
