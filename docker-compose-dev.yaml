@@ -16,11 +16,11 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=1
-      - NOMBRE=Lionel
-      - APELLIDO=Diaz
-      - DOCUMENTO=32364017
-      - NACIMIENTO=1973-06-05
-      - NUMERO=2052
+      - NOMBRE=Carlos
+      - APELLIDO=Lorca
+      - DOCUMENTO=46444680
+      - NACIMIENTO=1975-07-21
+      - NUMERO=2042
     networks:
       - testing_net
     depends_on:
@@ -34,11 +34,11 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=2
-      - NOMBRE=Maria
+      - NOMBRE=Carlos
       - APELLIDO=Perez
-      - DOCUMENTO=46585298
-      - NACIMIENTO=1997-04-02
-      - NUMERO=7001
+      - DOCUMENTO=44694412
+      - NACIMIENTO=1968-01-06
+      - NUMERO=5475
     networks:
       - testing_net
     depends_on:
@@ -52,11 +52,11 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=3
-      - NOMBRE=Carlos
-      - APELLIDO=Fernandez
-      - DOCUMENTO=35970298
-      - NACIMIENTO=1973-08-11
-      - NUMERO=3880
+      - NOMBRE=Ana
+      - APELLIDO=Perez
+      - DOCUMENTO=40898459
+      - NACIMIENTO=1987-02-15
+      - NUMERO=7768
     networks:
       - testing_net
     depends_on:
@@ -64,42 +64,6 @@ services:
     volumes:
       - ./client/config.yaml:/config.yaml
       - ./.data/agency-3.csv:/agency.csv
-  client4:
-    container_name: client4
-    image: client:latest
-    entrypoint: /client
-    environment:
-      - CLI_ID=4
-      - NOMBRE=Lionel
-      - APELLIDO=Diaz
-      - DOCUMENTO=46506973
-      - NACIMIENTO=1986-12-18
-      - NUMERO=8447
-    networks:
-      - testing_net
-    depends_on:
-      - server
-    volumes:
-      - ./client/config.yaml:/config.yaml
-      - ./.data/agency-4.csv:/agency.csv
-  client5:
-    container_name: client5
-    image: client:latest
-    entrypoint: /client
-    environment:
-      - CLI_ID=5
-      - NOMBRE=Lionel
-      - APELLIDO=Gomez
-      - DOCUMENTO=48640813
-      - NACIMIENTO=1980-04-08
-      - NUMERO=2458
-    networks:
-      - testing_net
-    depends_on:
-      - server
-    volumes:
-      - ./client/config.yaml:/config.yaml
-      - ./.data/agency-5.csv:/agency.csv
 
 networks:
   testing_net:

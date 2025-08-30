@@ -89,6 +89,7 @@ func (c *Client) ConsultarGanadores() (int, error) {
 		}
 		resp, err := bufio.NewReader(c.conn).ReadString('\n')
 		c.conn.Close()
+		time.Sleep(1 * time.Second)
 		if err != nil {
 			return 0, err
 		}
