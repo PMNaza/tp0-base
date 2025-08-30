@@ -6,6 +6,7 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+      - TOTAL_AGENCIES={num_clientes}
     networks:
       - testing_net
     volumes:
@@ -16,11 +17,11 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=1
-      - NOMBRE=Lionel
-      - APELLIDO=Diaz
-      - DOCUMENTO=42453611
-      - NACIMIENTO=1950-12-28
-      - NUMERO=8060
+      - NOMBRE=Carlos
+      - APELLIDO=Fernandez
+      - DOCUMENTO=31725776
+      - NACIMIENTO=1980-06-09
+      - NUMERO=7006
     networks:
       - testing_net
     depends_on:
@@ -34,11 +35,11 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=2
-      - NOMBRE=Maria
+      - NOMBRE=Lionel
       - APELLIDO=Gomez
-      - DOCUMENTO=38679673
-      - NACIMIENTO=1956-08-22
-      - NUMERO=5229
+      - DOCUMENTO=28525415
+      - NACIMIENTO=1971-07-13
+      - NUMERO=1267
     networks:
       - testing_net
     depends_on:
@@ -52,11 +53,11 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=3
-      - NOMBRE=Lionel
-      - APELLIDO=Perez
-      - DOCUMENTO=48320517
-      - NACIMIENTO=1974-01-11
-      - NUMERO=7789
+      - NOMBRE=Maria
+      - APELLIDO=Fernandez
+      - DOCUMENTO=27822093
+      - NACIMIENTO=1983-07-03
+      - NUMERO=513
     networks:
       - testing_net
     depends_on:

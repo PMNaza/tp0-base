@@ -5,7 +5,7 @@ def generate_compose(num_clientes, outfile):
     with open(outfile, "w") as f:
         # Encabezado y servidor
         f.write(
-            """name: tp0
+            f"""name: tp0
 services:
   server:
     container_name: server
