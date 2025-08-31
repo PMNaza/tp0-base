@@ -2,7 +2,6 @@ import sys
 
 def generate_compose(num_clientes, outfile):
     with open(outfile, "w") as f:
-        # Encabezado y servidor
         f.write(
             """name: tp0
 services:
@@ -17,7 +16,6 @@ services:
       - testing_net
 """
         )
-        # Clientes
         for i in range(1, num_clientes + 1):
             f.write(
                 f"""  client{i}:
@@ -33,7 +31,6 @@ services:
       - server
 """
             )
-        # Redes
         f.write(
             """
 networks:
