@@ -198,7 +198,6 @@ func batchBets(bets [][]string, maxAmount int, maxBytes int) [][][]string {
 func serializeBatch(bets [][]string, agencyID string) string {
 	lines := make([]string, 0, len(bets))
 	for _, bet := range bets {
-		// Prepend agencyID to each bet
 		line := append([]string{agencyID}, bet...)
 		lines = append(lines, strings.Join(line, "|"))
 	}

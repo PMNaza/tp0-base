@@ -3,7 +3,6 @@ import random
 
 def generate_compose(num_clientes, outfile):
     with open(outfile, "w") as f:
-        # Encabezado y servidor
         f.write(
             f"""name: tp0
 services:
@@ -20,7 +19,6 @@ services:
       - ./server/config.ini:/config.ini
 """
         )
-        # Clientes
         for i in range(1, num_clientes + 1):
             f.write(
                 f"""  client{i}:
@@ -43,7 +41,6 @@ services:
       - ./.data/agency-{i}.csv:/agency.csv
 """
             )
-        # Redes
         f.write(
             """
 networks:
