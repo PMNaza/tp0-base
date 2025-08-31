@@ -77,32 +77,28 @@ func (c *Client) NotifyFin() error {
 
 func (c *Client) ConsultarGanadores() (int, error) {
 
-	for {
-		if err := c.createClientSocket(); err != nil {
-			return 0, err
-		}
-		defer c.conn.Close()
-		consultaMsg := fmt.Sprintf("CONSULTA_GANADORES|%s\n", c.config.ID)
-		_, err := c.conn.Write([]byte(consultaMsg))
-		if err != nil {
-			return 0, err
-		}
-		resp, err := bufio.NewReader(c.conn).ReadString('\n')
-		c.conn.Close()
-		time.Sleep(1 * time.Second)
-		if err != nil {
-			return 0, err
-		}
-		resp = strings.TrimSpace(resp)
-		if resp == "ERROR" {
-			continue
-		}
-		if resp == "" {
-			return 0, nil
-		}
-		dnis := strings.Split(resp, "|")
-		return len(dnis), nil
+	if err := c.createClientSocket(); err != nil {
+		return 0, err
 	}
+	defer c.conn.Close()
+	consultaMsg := fmt.Sprintf("CONSULTA_GANADORES|%s\n", c.config.ID)
+	_, err := c.conn.Write([]byte(consultaMsg))
+	if err != nil {
+		return 0, err
+	}
+	resp, err := bufio.NewReader(c.conn).ReadString('\n')
+	c.conn.Close()
+	time.Sleep(1 * time.Second)
+	if err != nil {
+		return 0, err
+	}
+	resp = strings.TrimSpace(resp)
+	if resp == "" {
+		return 0, nil
+	}
+	dnis := strings.Split(resp, "|")
+	return len(dnis), nil
+
 }
 
 func NewClient(config ClientConfig) *Client {

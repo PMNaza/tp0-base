@@ -18,6 +18,7 @@ class Server:
         self._sorteo_done = False
         self._ganadores_por_agencia = {}
         self._lock = threading.Lock()
+        self._condvar = threading.Condition(self._lock)
         self._threads = []
 
     def graceful_shutdown(self, signum, frame):
@@ -55,21 +56,20 @@ class Server:
 
             if msg.startswith("FIN|"):
                 agency_id = msg.split("|")[1]
-                with self._lock:
+                with self._condvar:
                     self._agencies_finished.add(agency_id)
                     logging.info(f"action: fin_agencia | result: success | agencia: {agency_id} | total_agencias: {len(self._agencies_finished)}")
                     client_sock.sendall(b"OK\n")
                     if len(self._agencies_finished) == self._total_agencies and not self._sorteo_done:
                         self._realizar_sorteo()
+                        self._condvar.notify_all()  # Despierta a todos los threads esperando el sorteo
                 return
 
             if msg.startswith("CONSULTA_GANADORES|"):
                 agency_id = msg.split("|")[1]
-                with self._lock:
-                    if not self._sorteo_done:
-                        client_sock.sendall(b"ERROR\n")
-                        logging.info(f"action: consulta_ganadores | result: in_progress | agencia: {agency_id} | msg: sorteo no realizado")
-                        return
+                with self._condvar:
+                    while not self._sorteo_done:
+                        self._condvar.wait()  # Espera hasta que el sorteo esté hecho
                     ganadores = self._ganadores_por_agencia.get(int(agency_id), [])
                     dni_list = "|".join(ganadores)
                     client_sock.sendall((dni_list + "\n").encode('utf-8'))
