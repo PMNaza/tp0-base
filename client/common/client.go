@@ -168,33 +168,6 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
-func batchBets(bets [][]string, maxAmount int, maxBytes int) [][][]string {
-	var batches [][][]string
-	i := 0
-	for i < len(bets) {
-		var batch [][]string
-		batchSize := 0
-		for j := 0; j < maxAmount && i+j < len(bets); j++ {
-			bet := bets[i+j]
-			betStr := strings.Join(bet, "|")
-			if batchSize+len(betStr)+1 > maxBytes {
-				break
-			}
-			batch = append(batch, bet)
-			batchSize += len(betStr) + 1
-		}
-		if len(batch) == 0 {
-
-			batch = append(batch, bets[i])
-			i++
-		} else {
-			i += len(batch)
-		}
-		batches = append(batches, batch)
-	}
-	return batches
-}
-
 func serializeBatch(bets [][]string, agencyID string) string {
 	lines := make([]string, 0, len(bets))
 	for _, bet := range bets {
