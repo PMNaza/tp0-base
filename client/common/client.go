@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/csv"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"strings"
@@ -113,22 +114,73 @@ func serializeBatch(bets [][]string) string {
 }
 
 func (c *Client) StartClientLoop() {
-	bets, err := c.ReadBetsFromCSV()
-	if err != nil {
-		log.Criticalf("action: read_csv | result: fail | error: %v", err)
+	const maxBytes = 8192
+	if c.file == nil {
+		log.Criticalf("action: read_csv | result: fail | error: CSV file not opened")
 		return
 	}
+	reader := csv.NewReader(c.file)
+	reader.FieldsPerRecord = 5
 
-	const maxBytes = 8192
-	batches := batchBets(bets, c.config.BatchMax, maxBytes)
+	batch := make([][]string, 0, c.config.BatchMax)
+	batchSize := 0
 
-	for _, batch := range batches {
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Errorf("action: read_csv | result: fail | error: %v", err)
+			return
+		}
+		if len(record) != 5 {
+			continue
+		}
+		betStr := strings.Join(record, "|")
+		if batchSize+len(betStr)+1 > maxBytes || len(batch) >= c.config.BatchMax {
+			if len(batch) > 0 {
+				msg := serializeBatch(batch)
+				if err := c.createClientSocket(); err != nil {
+					return
+				}
+				totalSent := 0
+				msgBytes := []byte(msg)
+				for totalSent < len(msgBytes) {
+					n, err := c.conn.Write(msgBytes[totalSent:])
+					if err != nil {
+						log.Errorf("action: send_batch | result: fail | error: %v", err)
+						c.conn.Close()
+						return
+					}
+					totalSent += n
+				}
+				resp, err := bufio.NewReader(c.conn).ReadString('\n')
+				c.conn.Close()
+				resp = strings.TrimSpace(resp)
+				if err != nil {
+					log.Errorf("action: receive_response | result: fail | error: %v", err)
+					return
+				}
+				if resp == "OK" {
+					log.Infof("action: apuesta_enviada | result: success | cantidad: %d", len(batch))
+				} else {
+					log.Infof("action: apuesta_enviada | result: fail | cantidad: %d", len(batch))
+				}
+				time.Sleep(c.config.LoopPeriod)
+				batch = make([][]string, 0, c.config.BatchMax)
+				batchSize = 0
+			}
+		}
+		batch = append(batch, record)
+		batchSize += len(betStr) + 1
+	}
+
+	if len(batch) > 0 {
 		msg := serializeBatch(batch)
-
 		if err := c.createClientSocket(); err != nil {
 			return
 		}
-
 		totalSent := 0
 		msgBytes := []byte(msg)
 		for totalSent < len(msgBytes) {
@@ -140,23 +192,19 @@ func (c *Client) StartClientLoop() {
 			}
 			totalSent += n
 		}
-
 		resp, err := bufio.NewReader(c.conn).ReadString('\n')
 		c.conn.Close()
 		resp = strings.TrimSpace(resp)
-
 		if err != nil {
 			log.Errorf("action: receive_response | result: fail | error: %v", err)
 			return
 		}
-
 		if resp == "OK" {
 			log.Infof("action: apuesta_enviada | result: success | cantidad: %d", len(batch))
 		} else {
 			log.Infof("action: apuesta_enviada | result: fail | cantidad: %d", len(batch))
 		}
-
-		time.Sleep(c.config.LoopPeriod)
 	}
+
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
