@@ -31,9 +31,10 @@ type Client struct {
 
 func (c *Client) SendBatch(batch [][]string) error {
 	msg := serializeBatch(batch, c.config.ID)
-	if c.conn == nil {
-		return fmt.Errorf("connection not established")
+	if err := c.createClientSocket(); err != nil {
+		return err
 	}
+	defer c.conn.Close()
 
 	totalSent := 0
 	msgBytes := []byte(msg)
@@ -58,9 +59,10 @@ func (c *Client) SendBatch(batch [][]string) error {
 }
 
 func (c *Client) NotifyFin() error {
-	if c.conn == nil {
-		return fmt.Errorf("connection not established")
+	if err := c.createClientSocket(); err != nil {
+		return err
 	}
+	defer c.conn.Close()
 	finMsg := fmt.Sprintf("FIN|%s\n", c.config.ID)
 	_, err := c.conn.Write([]byte(finMsg))
 	if err != nil {
@@ -186,16 +188,6 @@ func (c *Client) StartClientLoop() {
 	batchSize := 0
 	batchCount := 0
 
-	if err := c.createClientSocket(); err != nil {
-		log.Criticalf("action: connect | result: fail | error: %v", err)
-		return
-	}
-	defer func() {
-		if c.conn != nil {
-			c.conn.Close()
-			log.Infof("action: shutdown | result: success | msg: Client socket closed")
-		}
-	}()
 	for {
 		record, err := reader.Read()
 		if err == io.EOF {
