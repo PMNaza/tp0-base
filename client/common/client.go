@@ -205,26 +205,58 @@ func serializeBatch(bets [][]string, agencyID string) string {
 }
 
 func (c *Client) StartClientLoop() {
-	bets, err := c.ReadBetsFromCSV()
-	if err != nil {
-		log.Criticalf("action: read_csv | result: fail | error: %v", err)
+	const maxBytes = 8192
+	if c.file == nil {
+		log.Criticalf("action: read_csv | result: fail | error: CSV file not opened")
 		return
 	}
-
-	const maxBytes = 8192
-	batches := batchBets(bets, c.config.BatchMax, maxBytes)
+	reader := csv.NewReader(c.file)
+	reader.FieldsPerRecord = 5
 
 	loopAmount := c.config.LoopAmount
-	if loopAmount > len(batches) {
-		loopAmount = len(batches)
+	batchMax := c.config.BatchMax
+
+	batch := make([][]string, 0, batchMax)
+	batchSize := 0
+	batchCount := 0
+
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Errorf("action: read_csv | result: fail | error: %v", err)
+			return
+		}
+		if len(record) != 5 {
+			continue
+		}
+		betStr := strings.Join(record, "|")
+		if batchSize+len(betStr)+1 > maxBytes || len(batch) >= batchMax {
+			if len(batch) > 0 {
+				if batchCount < loopAmount {
+					if err := c.SendBatch(batch); err != nil {
+						log.Errorf("action: send_batch | result: fail | error: %v", err)
+						return
+					}
+					batchCount++
+					time.Sleep(c.config.LoopPeriod)
+				}
+				batch = make([][]string, 0, batchMax)
+				batchSize = 0
+			}
+		}
+		batch = append(batch, record)
+		batchSize += len(betStr) + 1
 	}
 
-	for i := 0; i < loopAmount; i++ {
-		if err := c.SendBatch(batches[i]); err != nil {
+	if len(batch) > 0 && batchCount < loopAmount {
+		if err := c.SendBatch(batch); err != nil {
 			log.Errorf("action: send_batch | result: fail | error: %v", err)
 			return
 		}
-		time.Sleep(c.config.LoopPeriod)
+		batchCount++
 	}
 
 	if err := c.NotifyFin(); err != nil {
