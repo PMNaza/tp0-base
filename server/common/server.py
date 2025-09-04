@@ -38,7 +38,6 @@ class Server:
             try:
                 client_sock = self.__accept_new_connection()
                 t = threading.Thread(target=self.__handle_client_connection, args=(client_sock,))
-                t.daemon = True
                 t.start()
                 self._threads.append(t)
             except OSError:
@@ -62,14 +61,14 @@ class Server:
                     client_sock.sendall(b"OK\n")
                     if len(self._agencies_finished) == self._total_agencies and not self._sorteo_done:
                         self._realizar_sorteo()
-                        self._condvar.notify_all()  # Despierta a todos los threads esperando el sorteo
+                        self._condvar.notify_all()
                 return
 
             if msg.startswith("CONSULTA_GANADORES|"):
                 agency_id = msg.split("|")[1]
                 with self._condvar:
                     while not self._sorteo_done:
-                        self._condvar.wait()  # Espera hasta que el sorteo esté hecho
+                        self._condvar.wait()
                     ganadores = self._ganadores_por_agencia.get(int(agency_id), [])
                     dni_list = "|".join(ganadores)
                     client_sock.sendall((dni_list + "\n").encode('utf-8'))
