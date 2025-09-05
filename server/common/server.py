@@ -107,11 +107,12 @@ class Server:
     
     def _realizar_sorteo(self):
         self._ganadores_por_agencia = {}
-        for bet in load_bets():
-            if has_won(bet):
-                ag = bet.agency
-                if ag not in self._ganadores_por_agencia:
-                    self._ganadores_por_agencia[ag] = []
-                self._ganadores_por_agencia[ag].append(bet.document)
+        with self._lock:  # Lock para acceso seguro a bets.csv
+            for bet in load_bets():
+                if has_won(bet):
+                    ag = bet.agency
+                    if ag not in self._ganadores_por_agencia:
+                        self._ganadores_por_agencia[ag] = []
+                    self._ganadores_por_agencia[ag].append(bet.document)
         self._sorteo_done = True
         logging.info("action: sorteo | result: success")
