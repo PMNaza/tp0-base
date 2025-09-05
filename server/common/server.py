@@ -23,12 +23,14 @@ class Server:
 
     def graceful_shutdown(self, signum, frame):
         logging.info("action: shutdown | result: in_progress | msg: Closing server socket")
-        self._server_socket.close()
-        logging.info("action: shutdown | result: success | msg: Server socket closed")
         self._shutdown = True
+        self._server_socket.close()
+        with self._condvar:
+            self._condvar.notify_all()
+
+        logging.info("action: shutdown | result: success | msg: Server socket closed")
         for t in self._threads:
             t.join(timeout=5)
-        sys.exit(0)
 
     def run(self):
         signal.signal(signal.SIGTERM, self.graceful_shutdown)
@@ -67,8 +69,11 @@ class Server:
             if msg.startswith("CONSULTA_GANADORES|"):
                 agency_id = msg.split("|")[1]
                 with self._condvar:
-                    while not self._sorteo_done:
+                    while not self._sorteo_done and not self._shutdown:
                         self._condvar.wait()
+                    if self._shutdown:
+                        client_sock.sendall(b"ERROR\n")
+                        return
                     ganadores = self._ganadores_por_agencia.get(int(agency_id), [])
                     dni_list = "|".join(ganadores)
                     client_sock.sendall((dni_list + "\n").encode('utf-8'))
@@ -88,7 +93,10 @@ class Server:
                 client_sock.sendall(b"OK\n")
         except Exception as e:
             logging.error(f'action: apuesta_recibida | result: fail | error: {e}')
-            client_sock.sendall(b"ERROR\n")
+            try:
+                client_sock.sendall(b"ERROR\n")
+            except Exception:
+                pass
         finally:
             client_sock.close()
 
@@ -100,11 +108,12 @@ class Server:
     
     def _realizar_sorteo(self):
         self._ganadores_por_agencia = {}
-        for bet in load_bets():
-            if has_won(bet):
-                ag = bet.agency
-                if ag not in self._ganadores_por_agencia:
-                    self._ganadores_por_agencia[ag] = []
-                self._ganadores_por_agencia[ag].append(bet.document)
+        with self._lock:
+            for bet in load_bets():
+                if has_won(bet):
+                    ag = bet.agency
+                    if ag not in self._ganadores_por_agencia:
+                        self._ganadores_por_agencia[ag] = []
+                    self._ganadores_por_agencia[ag].append(bet.document)
         self._sorteo_done = True
         logging.info("action: sorteo | result: success")

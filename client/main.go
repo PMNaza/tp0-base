@@ -126,7 +126,6 @@ func main() {
 		log.Infof("action: shutdown | result: in_progress | msg: Closing client socket")
 		common.CloseClient(client)
 		client.CloseCSV()
-		os.Exit(0)
 	}()
 	client.StartClientLoop()
 	client.CloseCSV()
