@@ -17,7 +17,8 @@ class Server:
         self._agencies_finished = set()
         self._sorteo_done = False
         self._ganadores_por_agencia = {}
-        self._lock = threading.Lock()
+        self._lock = threading.Lock()  # Usado para condvar
+        self._bets_lock = threading.Lock()  # Nuevo lock solo para bets.csv
         self._condvar = threading.Condition(self._lock)
         self._threads = []
 
@@ -107,7 +108,7 @@ class Server:
     
     def _realizar_sorteo(self):
         self._ganadores_por_agencia = {}
-        with self._lock:  # Lock para acceso seguro a bets.csv
+        with self._bets_lock:  # Lock solo para acceso seguro a bets.csv
             for bet in load_bets():
                 if has_won(bet):
                     ag = bet.agency
