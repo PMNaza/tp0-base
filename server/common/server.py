@@ -79,7 +79,6 @@ class Server:
                 ganadores = self._ganadores_por_agencia.get(int(agency_id), [])
                 dni_list = "|".join(ganadores)
                 client_sock.sendall((dni_list + "\n").encode('utf-8'))
-                logging.info(f"action: consulta_ganadores | result: success | agencia: {agency_id} | cant_ganadores: {len(ganadores)}")
                 return
 
             apuestas = msg.split('\n')
