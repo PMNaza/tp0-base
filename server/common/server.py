@@ -67,7 +67,7 @@ class Server:
                 return
 
             if msg.startswith("CONSULTA_GANADORES|"):
-                agency_id = int(msg.split("|")[1])  # <-- convertir a entero
+                agency_id = int(msg.split("|")[1])
                 with self._condvar:
                     while not self._sorteo_done and not self._shutdown:
                         self._condvar.wait()
@@ -77,7 +77,6 @@ class Server:
                     ganadores = self._ganadores_por_agencia.get(agency_id, [])
                     dni_list = "|".join(ganadores)
                     client_sock.sendall((dni_list + "\n").encode('utf-8'))
-                    logging.info(f"action: consulta_ganadores | result: success | agencia: {agency_id} | cant_ganadores: {len(ganadores)}")
                 return
 
             apuestas = msg.split('\n')
